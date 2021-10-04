@@ -3,62 +3,66 @@ package cache
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
+/* Cache class is the interface for storing K/V pairs, with expiry times.
+ *
+ * It uses an inner ring-buffer (Ring), to take advantage of the fact that
+ * overwriting old values is OK. Pointers are stored as offsets into the
+ * ring-buffer, so entries can be set atomically regardless of data size.
+ */
 class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
-    ttlMillis: Long,
-    minSize: Int = 1,
-    maxSize: Int = Int.MaxValue,
-    clock: () => Long = System.currentTimeMillis,
-    smoothing: Double = 0.5,
-    resizeThreshold: Double = 0.02,
-  )(implicit kev: Numeric[K], vev: Numeric[V]){
-  var capacity = minSize
-  private var fillFactor = 0.0
-  private var metas = Array.fill[Long](capacity)(0)
-  private var keys = Array.fill[K](capacity)(kev.zero)
-  private var values = Array.fill[V](capacity)(vev.zero)
+  capacity: Int = 1,
+  nNeighbours: Int = 4,
+)(implicit kev: Numeric[K], vev: Numeric[V]){
+  private val ring = new Ring[K, V](capacity)
+  /* The offset can be at most a Long, to allow atomic instructions. The top
+   * bit of the offset contains an occupancy bit.
+   */
+  private val offsets = Array.fill[Long](capacity)(0)
+  private val occupiedMask = ~(~0L >>> 1)
+  private val indexMask = ~occupiedMask
 
   def apply(key: K): Option[V] = {
+    /* To look up a key:
+     * 1. Hash to a bucket.
+     * 2. Probe nNeighbours slots for the presence of the key.
+     * 3. Read the value.
+     * 4. Check the generation, to ensure the value has not been overwritten.
+     *    a. we assume the generation number wraps around infrequently, such
+     *       that it will not loop around to the same value during one read.
+     */
     val bucket = key.hashCode.abs % capacity
-    if (isExpired(bucket)) {
-      None
-    } else if (keys(bucket) != key) {
-      None
-    } else {
-      Some(values(bucket))
+    for (i <- bucket until (bucket + nNeighbours)) {
+      val offset = offsets(i % capacity) & indexMask
+      ring(offset.intValue) match {
+        case Some((rkey, value)) => if (key == rkey) { return Some(value) }
+        case None => ()
+      }
     }
+    None
   }
 
   def update(key: K, value: V): Unit = {
+    /* To insert a key, we have two steps:
+     * 1. Push the value into the backing Ring, recording the offset
+     *   a. We never overwrite non-expired keys, so don't have to optimize for
+     *      re-using slots in the ring.
+     * 2. Hash the key to a bucket
+     * 3. Probe nNeighbours slots for a free slot
+     *    a. We don't need to store every key, only most keys. If we do not
+     *       find a free slot within nNeighbours, we give up. TODO - we could
+     *       also overwrite the oldest.
+     * 4. Store the offset
+     */
+    val newOffset = ring.push(key, value)
     val bucket = key.hashCode.abs % capacity
-    val isCollision = !isExpired(bucket) && keys(bucket) != key
-    fillFactor += smoothing * ((if (isCollision) 1.0 else 0.0) - fillFactor)
-    if (fillFactor > resizeThreshold) {
-      resize(capacity * 2)
+    for (i <- bucket until (bucket + nNeighbours)) {
+      val offset = offsets(i % capacity) & indexMask
+      ring(offset.intValue) match {
+        case Some(_) => ()
+        case None =>
+          offsets(i % capacity) = newOffset | occupiedMask
+          return
+      }
     }
-    metas(bucket) = clock()
-    keys(bucket) = key
-    values(bucket) = value
-  }
-
-  def resize(size: Int): Unit = {
-    println(size)
-    val newMetas = Array.fill[Long](size)(0)
-    val newKeys = Array.fill[K](size)(kev.zero)
-    val newValues = Array.fill[V](size)(vev.zero)
-    for (bucket <- (0 to (capacity - 1)).filter(!isExpired(_))) {
-      val newBucket = keys(bucket).hashCode.abs % size
-      newMetas(newBucket) = metas(bucket)
-      newKeys(newBucket) = keys(bucket)
-      newValues(newBucket) = values(bucket)
-    }
-    metas = newMetas
-    keys = newKeys
-    values = newValues
-    capacity = size
-    fillFactor = 0.0
-  }
-
-  private def isExpired(bucket: Int): Boolean = {
-    metas(bucket) < clock() - ttlMillis
   }
 }

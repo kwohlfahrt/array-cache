@@ -5,7 +5,7 @@ import scala.util.Random
 // A stress-test, to run and observe GC logs
 object Stress extends App {
   val rand = new Random()
-  val cache = new Cache[Long, Double](1000, minSize=5000, smoothing=0.03, resizeThreshold=0.90)
+  val cache = new Cache[Long, Double](1000)
   val pairs = (0 to 1000).map(_ => (rand.nextLong, rand.nextDouble))
   for ((k, v) <- pairs) {
     cache.update(k, v)
