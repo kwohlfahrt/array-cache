@@ -2,6 +2,7 @@ package cache
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+import java.util.concurrent.atomic.AtomicLongArray
 
 /* Cache class is the interface for storing K/V pairs, with expiry times.
  *
@@ -17,7 +18,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   /* The offset can be at most a Long, to allow atomic instructions. The top
    * bit of the offset contains an occupancy bit.
    */
-  private val offsets = Array.fill[Long](capacity)(0)
+  private val offsets = new AtomicLongArray(capacity)
   private val occupiedMask = ~(~0L >>> 1)
   private val indexMask = ~occupiedMask
 
@@ -32,7 +33,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
      */
     val bucket = key.hashCode.abs % capacity
     for (i <- bucket until (bucket + nNeighbours)) {
-      val offset = offsets(i % capacity) & indexMask
+      val offset = offsets.getOpaque(i % capacity)
       ring(offset) match {
         case Some((rkey, value)) => if (key == rkey) { return Some(value) }
         case None => ()
@@ -56,12 +57,10 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     val newOffset = ring.push(key, value)
     val bucket = key.hashCode.abs % capacity
     for (i <- bucket until (bucket + nNeighbours)) {
-      val offset = offsets(i % capacity) & indexMask
+      val offset = offsets.getOpaque(i % capacity)
       ring(offset) match {
         case Some(_) => ()
-        case None =>
-          offsets(i % capacity) = newOffset | occupiedMask
-          return
+        case None => return offsets.setRelease(i % capacity, newOffset)
       }
     }
   }
