@@ -1,6 +1,7 @@
 package cache
 
 import scala.reflect.ClassTag
+import java.util.concurrent.atomic.AtomicLong
 
 /* Ring class is used to back the Cache interface.
  *
@@ -16,11 +17,11 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   private val capacity = 1 << log2Capacity
   private val capacityMask = -1L >>> (64 - log2Capacity)
 
-  private var head = capacity + 1 // Start so that 0 (offset fill-value offset) is invalid
+  private var head = new AtomicLong(capacity.longValue + 1) // Start so that 0 (offset fill-value offset) is invalid
   private val keys = Array.fill(capacity)(kev.zero)
   private val values = Array.fill(capacity)(vev.zero)
 
-  def apply(i: Int): Option[(K, V)] = {
+  def apply(i: Long): Option[(K, V)] = {
     /* Optimization to avoid work when checking if slots are free */
     if (isDead(i)) { return None }
     val index = (i & capacityMask).intValue
@@ -32,20 +33,19 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   }
 
   def push(item: (K, V)): Long = {
-    val offset = head
-    val index = (head & capacityMask).intValue
-    head += 1
+    val offset = head.getAndIncrement()
+    val index = (offset & capacityMask).intValue
     val (key, value) = item
     keys(index) = key
     values(index) = value
     offset
   }
 
-  def isDead(i: Int): Boolean = {
+  def isDead(i: Long): Boolean = {
     /* Index is not part of the current, next or previous generations
      * Assumes we don't wrap around before using the result
      */
-    (i < head - capacity) || (i >= head + capacity)
+    (i < head.getPlain() - capacity) || (i >= head.getPlain() + capacity)
     // FIXME: Handle the 2^64 wraparound
   }
 }

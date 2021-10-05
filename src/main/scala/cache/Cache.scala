@@ -33,7 +33,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     val bucket = key.hashCode.abs % capacity
     for (i <- bucket until (bucket + nNeighbours)) {
       val offset = offsets(i % capacity) & indexMask
-      ring(offset.intValue) match {
+      ring(offset) match {
         case Some((rkey, value)) => if (key == rkey) { return Some(value) }
         case None => ()
       }
@@ -57,7 +57,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     val bucket = key.hashCode.abs % capacity
     for (i <- bucket until (bucket + nNeighbours)) {
       val offset = offsets(i % capacity) & indexMask
-      ring(offset.intValue) match {
+      ring(offset) match {
         case Some(_) => ()
         case None =>
           offsets(i % capacity) = newOffset | occupiedMask
