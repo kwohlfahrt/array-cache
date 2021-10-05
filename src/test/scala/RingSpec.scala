@@ -8,7 +8,7 @@ import org.scalatest._
 import flatspec._
 import matchers.should._
 
-class RingSpec extends  AsyncFlatSpec with Matchers with Inspectors {
+class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
   val ttl = 10;
 
   "A Ring" should "store as many values as it has capacity for" in {

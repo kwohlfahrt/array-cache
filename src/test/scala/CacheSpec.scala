@@ -6,16 +6,16 @@ import org.scalatest._
 import flatspec._
 import matchers.should._
 
-class CacheSpec extends  AnyFlatSpec with Matchers {
+class CacheSpec extends AnyFlatSpec with Matchers with Inspectors {
   "A Cache" should "store values" in {
     val cache = new Cache[Long, Double](1)
     cache.update(1, 2.0)
-    cache(1) should equal (Some(2.0))
+    cache(1) should contain (2.0)
   }
 
   "A Cache" should "return None for missing values" in {
     val cache = new Cache[Long, Double]()
-    cache(1) should equal (None)
+    cache(1) shouldBe empty
   }
 
   "A Cache" should "store most values" in {
@@ -24,7 +24,12 @@ class CacheSpec extends  AnyFlatSpec with Matchers {
     val rand = new Random(4)
     val items = (0 to capacity).map(_ => rand.nextLong -> rand.nextDouble)
     items.foreach { case (k, v) => cache.update(k, v) }
-    val hits = items.count { case (k, v) => cache(k) == Some(v) } 
-    hits should be > ((capacity * 0.8).toInt)
+    forAll(items) {
+      case (k, v) => cache(k) should (be (empty) or contain (v))
+    }
+
+    forAtMost((capacity * 0.2).toInt, items) {
+      case (k, _) => cache(k) shouldBe empty
+    }
   }
 }
