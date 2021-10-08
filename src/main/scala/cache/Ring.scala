@@ -1,7 +1,7 @@
 package cache
 
 import scala.reflect.ClassTag
-import java.util.concurrent.atomic.AtomicLong
+import java.lang.invoke.{MethodHandles, VarHandle}
 
 /* Ring class is used to back the Cache interface.
  *
@@ -12,28 +12,37 @@ import java.util.concurrent.atomic.AtomicLong
 class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   minCapacity: Int = 1,
 )(implicit kev: Numeric[K], vev: Numeric[V]) {
+  import Ring._
+
   // Round up to next power of two, so wraparound arithmetic works out
   private val log2Capacity = 32 - Integer.numberOfLeadingZeros(Integer.max(minCapacity - 1, 1))
   private val capacity = 1 << log2Capacity
   private val capacityMask = -1L >>> (64 - log2Capacity)
 
-  private var head = new AtomicLong(capacity.longValue + 1) // Start so that 0 (offset fill-value offset) is invalid
+  private var head: Long = capacity.longValue + 1 // Start so that 0 (offset fill-value offset) is invalid
   private val keys = Array.fill(capacity)(kev.zero)
   private val values = Array.fill(capacity)(vev.zero)
 
   def apply(i: Long): Option[(K, V)] = {
-    /* Optimization to avoid work when checking if slots are free */
-    if (isDead(i)) { return None }
+    // Optimization to avoid work when checking if slots are free
+    if (isDead(headHandle.getOpaque(this), i)) { return None }
     val index = (i & capacityMask).intValue
     val item = keys(index) -> values(index)
+
     /* We only need to check if the value has been overwritten during reading.
      * We will never try to read the value before setting it.
      */
-    if (isDead(i)) None else Some(item)
+    VarHandle.loadLoadFence()
+    if (isDead(headHandle.getOpaque(this), i)) None else Some(item)
   }
 
   def push(item: (K, V)): Long = {
-    val offset = head.getAndIncrement()
+    /* Here, we reserve a slot.
+     *
+     * This requires a store-store fence. getAndAdd has volatile semantics, so
+     * should be sufficient.
+     */
+    val offset: Long = headHandle.getAndAdd(this, 1)
     val index = (offset & capacityMask).intValue
     val (key, value) = item
     keys(index) = key
@@ -41,11 +50,14 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     offset
   }
 
-  def isDead(i: Long): Boolean = {
-    /* Index is not part of the current, next or previous generations
-     * Assumes we don't wrap around before using the result
-     */
-    (i < head.getPlain() - capacity) || (i >= head.getPlain() + capacity)
+  def isDead(head: Long, i: Long): Boolean = {
+    (i < head - capacity) || (i > head)
     // FIXME: Handle the 2^64 wraparound
   }
+}
+
+object Ring {
+  val headHandle = MethodHandles
+    .privateLookupIn(classOf[Ring[_, _]], MethodHandles.lookup())
+    .findVarHandle(classOf[Ring[_, _]], "head", classOf[Long])
 }

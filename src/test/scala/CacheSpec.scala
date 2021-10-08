@@ -44,6 +44,7 @@ class CacheSpec extends AsyncFlatSpec with Matchers with Inspectors {
     forAll(keys.zip(items)) {
       case (k, (_, v)) => k map { cache(_) should (be (empty) or contain (v)) }
     }
+    // FIXME: These tests seem to be sensitive to ordering. Double check.
     forAtMost((capacity * 0.2).toInt, keys.zip(items)) {
       case (k, (_, v)) => k map { cache(_) shouldBe empty }
     }
