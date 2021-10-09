@@ -4,6 +4,6 @@ lazy val cache = (project in file("."))
     exportJars := true,
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.10" % Test,
-    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-15" % "3.2.9.0" % "test",
+    libraryDependencies += "org.scalatestplus" %% "scalacheck-1-15" % "3.2.9.0" % Test,
     testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
   ).enablePlugins(JmhPlugin)

@@ -25,7 +25,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   private val indexMask = ~occupiedMask
 
   def apply(key: K): Option[V] = {
-    val bucket = key.hashCode.abs % capacity
+    val bucket = hash(key)
     for (i <- bucket until (bucket + nNeighbours)) {
       /* This requires a load-load barrier, to ensure the read of the data
        * occurs after the load of a valid offset.
@@ -43,7 +43,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
 
   def update(key: K, value: V): Unit = {
     val newOffset = ring.push(key, value)
-    val bucket = key.hashCode.abs % capacity
+    val bucket = hash(key)
     for (i <- bucket until (bucket + nNeighbours)) {
       val offset: Long = offsetHandle.getOpaque(offsets, i % capacity)
       ring(offset) match {
@@ -62,6 +62,8 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
       }
     }
   }
+
+  def hash(key: K): Int = (key.hashCode.intValue - 1).abs % capacity
 
   def clear(): Unit = {
     for (i <- 0 until offsets.length) offsets(i) = 0

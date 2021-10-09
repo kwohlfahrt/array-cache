@@ -43,7 +43,7 @@ class CacheBenchmark {
 object CacheBenchmark {
   @State(Scope.Thread)
   class SharedState {
-    val rand = new Random()
+    val rand = new Random(4)
   }
 
   @State(Scope.Thread)
