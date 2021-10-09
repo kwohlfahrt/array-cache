@@ -14,15 +14,29 @@ class CacheBenchmark {
   @Benchmark
   @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
-  def fillCapacityReference(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
+  def fillReference(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
     cs.cache.put(ss.rand.nextLong, ss.rand.nextDouble)
   }
 
   @Benchmark
   @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
-  def fillCapacity(ss: SharedState, cs: CacheState, bh: Blackhole): Unit = {
+  def readReference(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
+    bh.consume(cs.cache.get(ss.rand.nextLong))
+  }
+
+  @Benchmark
+  @Threads(2)
+  @OutputTimeUnit(TimeUnit.MILLISECONDS)
+  def fill(ss: SharedState, cs: CacheState, bh: Blackhole): Unit = {
     cs.cache.update(ss.rand.nextLong, ss.rand.nextDouble)
+  }
+
+  @Benchmark
+  @Threads(2)
+  @OutputTimeUnit(TimeUnit.MILLISECONDS)
+  def read(ss: SharedState, cs: CacheState, bh: Blackhole): Unit = {
+    bh.consume(cs.cache(ss.rand.nextLong))
   }
 }
 
@@ -35,16 +49,28 @@ object CacheBenchmark {
   @State(Scope.Thread)
   class CacheState {
     val cache = new Cache[Long, Double](1000)
+    val fullCache = new Cache[Long, Double](1000)
 
     @Setup(Level.Iteration)
     def clear(): Unit = cache.clear()
+
+    @Setup(Level.Trial)
+    def fill(ss: SharedState): Unit = {
+      fullCache.update(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+    }
   }
 
   @State(Scope.Thread)
   class HashMapState {
     val cache = new ConcurrentHashMap[Long, Double](1000)
+    val fullCache = new ConcurrentHashMap[Long, Double](1000)
 
     @Setup(Level.Iteration)
     def clear(): Unit = cache.clear()
+
+    @Setup(Level.Trial)
+    def fill(ss: SharedState): Unit = {
+      fullCache.put(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+    }
   }
 }
