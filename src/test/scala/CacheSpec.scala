@@ -5,6 +5,7 @@ import scala.concurrent.{Future, ExecutionContext}
 import java.util.concurrent.Executors
 
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures._
 import flatspec._
 import matchers.should._
 
@@ -40,13 +41,12 @@ class CacheSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val cache = new Cache[Long, Double](capacity=capacity)
     val rand = new Random(4)
     val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
-    val keys = items.map { case (k, v) => Future { cache.update(k, v); k } (ec)}
-    forAll(keys.zip(items)) {
-      case (k, (_, v)) => k map { cache(_) should (be (empty) or contain (v)) }
-    }
-    // FIXME: These tests seem to be sensitive to ordering. Double check.
+    val keys = items.map { case (k, v) => Future { cache.update(k, v) } (ec)}
     forAtMost((capacity * 0.2).toInt, keys.zip(items)) {
-      case (k, (_, v)) => k map { cache(_) shouldBe empty }
+      case (f, (k, v)) => whenReady(f) { _ => cache(k) shouldBe empty }
+    }
+    forAll(keys.zip(items)) {
+      case (f, (k, v)) => whenReady(f) { _ => cache(k) should (be (empty) or contain (v)) }
     }
   }
 }

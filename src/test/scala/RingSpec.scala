@@ -5,6 +5,7 @@ import scala.concurrent.{Future, ExecutionContext}
 import java.util.concurrent.Executors
 
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures._
 import flatspec._
 import matchers.should._
 
@@ -53,7 +54,7 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val items = (0 until (2 * capacity)).map(_ => rand.nextLong -> rand.nextDouble)
     val indices = items.map(i => Future { ring.push(i) } (ec))
     forAll(indices.zip(items)) {
-      case (idx, item) => idx map { ring(_) should (be (empty) or contain (item)) }
+      case (idx, item) => whenReady(idx) { ring(_) should (be (empty) or contain (item)) }
     }
   }
 }
