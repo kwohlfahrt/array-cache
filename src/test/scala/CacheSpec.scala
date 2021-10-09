@@ -15,12 +15,12 @@ class CacheSpec extends AsyncFlatSpec with Matchers with Inspectors {
     cache(1) should contain (2.0)
   }
 
-  "A Cache" should "return None for missing values" in {
+  it should "return None for missing values" in {
     val cache = new Cache[Long, Double]()
     cache(1) shouldBe empty
   }
 
-  "A Cache" should "store most values" in {
+  it should "store most values" in {
     val capacity = 100
     val cache = new Cache[Long, Double](capacity=capacity)
     val rand = new Random(4)
@@ -34,7 +34,7 @@ class CacheSpec extends AsyncFlatSpec with Matchers with Inspectors {
     }
   }
 
-  "A Cache" should "store and retrieve values reliably from multiple threads" in {
+  it should "store and retrieve values reliably from multiple threads" in {
     val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
     val capacity = 100
     val cache = new Cache[Long, Double](capacity=capacity)

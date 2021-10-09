@@ -20,7 +20,7 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     indices.flatMap(ring(_)) shouldEqual items
   }
 
-  "A Ring" should "overwrite values when full" in {
+  it should "overwrite values when full" in {
     val capacity = 8
     val rand = new Random(4)
     val ring = new Ring[Long, Double](capacity)
@@ -33,7 +33,7 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     ring(indices(0)) shouldBe empty
   }
 
-  "A Ring" should "store and retrieve values reliably from multiple threads" in {
+  it should "store and retrieve values reliably from multiple threads" in {
     val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
     val capacity = 100
     val ring = new Ring[Long, Double](capacity)
@@ -45,7 +45,7 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     }
   }
 
-  "A Ring" should "invalidate items from multiple threads" in {
+  it should "invalidate items from multiple threads" in {
     val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
     val capacity = 100
     val ring = new Ring[Long, Double](capacity)
