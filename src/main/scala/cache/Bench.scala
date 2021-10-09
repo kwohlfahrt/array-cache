@@ -12,12 +12,14 @@ class CacheBenchmark {
   import CacheBenchmark._
 
   @Benchmark
+  @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def fillCapacityReference(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
     cs.cache.put(ss.rand.nextLong, ss.rand.nextDouble)
   }
 
   @Benchmark
+  @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def fillCapacity(ss: SharedState, cs: CacheState, bh: Blackhole): Unit = {
     cs.cache.update(ss.rand.nextLong, ss.rand.nextDouble)
@@ -25,7 +27,6 @@ class CacheBenchmark {
 }
 
 object CacheBenchmark {
-
   @State(Scope.Thread)
   class SharedState {
     val rand = new Random()
