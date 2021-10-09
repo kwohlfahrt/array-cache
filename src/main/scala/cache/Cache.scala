@@ -62,6 +62,11 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
       }
     }
   }
+
+  def clear(): Unit = {
+    for (i <- 0 until offsets.length) offsets(i) = 0
+    ring.clear()
+  }
 }
 
 object Cache {

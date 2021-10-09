@@ -54,6 +54,12 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     (i < head - capacity) || (i > head)
     // FIXME: Handle the 2^64 wraparound
   }
+
+  def clear(): Unit = {
+    head = capacity.longValue + 1
+    for (i <- 0 until keys.length) keys(i) = kev.zero
+    for (i <- 0 until values.length) values(i) = vev.zero
+  }
 }
 
 object Ring {
