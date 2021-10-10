@@ -14,7 +14,7 @@ class ReferenceBenchmark {
   @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def fill(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
-    cs.cache.put(ss.rand.nextLong, ss.rand.nextDouble)
+    cs.cache.put(ss.rand.nextLong % 2000, ss.rand.nextDouble)
   }
 
   @Benchmark
@@ -22,6 +22,14 @@ class ReferenceBenchmark {
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def read(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
     bh.consume(cs.fullCache.get(ss.rand.nextLong % 2000))
+  }
+
+  @Benchmark
+  @Threads(6)
+  @OutputTimeUnit(TimeUnit.MILLISECONDS)
+  def mixed(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
+    cs.cache.put(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+    bh.consume(cs.cache.get(ss.rand.nextLong % 2000))
   }
 }
 
