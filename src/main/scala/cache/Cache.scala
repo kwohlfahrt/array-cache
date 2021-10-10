@@ -34,8 +34,8 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
        */
       val offset: Long = offsetHandle.getAcquire(offsets, i % capacity)
       ring(offset) match {
-        case Some((rkey, value)) => if (key == rkey) { return Some(value) }
-        case None => ()
+        case Some((rkey, value)) if (key == rkey) => return Some(value)
+        case _ => ()
       }
     }
     None

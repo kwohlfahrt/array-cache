@@ -7,7 +7,6 @@ import org.openjdk.jmh.infra.Blackhole
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 
-// A stress-test, to run and observe GC logs
 class CacheBenchmark {
   import CacheBenchmark._
 
@@ -22,7 +21,7 @@ class CacheBenchmark {
   @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def readReference(ss: SharedState, cs: HashMapState, bh: Blackhole): Unit = {
-    bh.consume(cs.cache.get(ss.rand.nextLong))
+    bh.consume(cs.cache.get(ss.rand.nextLong % 2000))
   }
 
   @Benchmark
@@ -36,7 +35,7 @@ class CacheBenchmark {
   @Threads(2)
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def read(ss: SharedState, cs: CacheState, bh: Blackhole): Unit = {
-    bh.consume(cs.cache(ss.rand.nextLong))
+    bh.consume(cs.cache(ss.rand.nextLong % 2000))
   }
 }
 
@@ -56,7 +55,9 @@ object CacheBenchmark {
 
     @Setup(Level.Trial)
     def fill(ss: SharedState): Unit = {
-      fullCache.update(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+      for (_ <- 0 to 1000) {
+        fullCache.update(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+      }
     }
   }
 
@@ -70,7 +71,9 @@ object CacheBenchmark {
 
     @Setup(Level.Trial)
     def fill(ss: SharedState): Unit = {
-      fullCache.put(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+      for (_ <- 0 to 1000) {
+        fullCache.put(ss.rand.nextLong % 2000, ss.rand.nextDouble)
+      }
     }
   }
 }
