@@ -37,17 +37,17 @@ especially for mixed or write-heavy workloads. The below results are using 10
 parallel threads.
 
 ```
-[info] Benchmark                             (N)   Mode  Cnt   Score    Error   Units
-[info] MixedBenchmark.cache             10000000  thrpt    3  15.557 ± 33.360  ops/us
-[info] MixedBenchmark.cache:readCache   10000000  thrpt    3   8.270 ± 32.341  ops/us
-[info] MixedBenchmark.cache:writeCache  10000000  thrpt    3   7.287 ±  2.172  ops/us
-[info] MixedBenchmark.ref               10000000  thrpt    3  13.643 ±  5.380  ops/us
-[info] MixedBenchmark.ref:readRef       10000000  thrpt    3   9.680 ±  7.625  ops/us
-[info] MixedBenchmark.ref:writeRef      10000000  thrpt    3   3.964 ±  2.473  ops/us
-[info] ReadBenchmark.cache              10000000  thrpt    3   8.924 ±  0.586  ops/us
-[info] ReadBenchmark.ref                10000000  thrpt    3  28.146 ± 18.338  ops/us
-[info] WriteBenchmark.cache             10000000  thrpt    3   9.218 ±  6.745  ops/us
-[info] WriteBenchmark.ref               10000000  thrpt    3  10.132 ± 22.058  ops/us
+[info] Benchmark                             (N)   Mode  Cnt   Score     Error   Units
+[info] MixedBenchmark.cache             10000000  thrpt    3  20.829 ±  10.592  ops/us
+[info] MixedBenchmark.cache:readCache   10000000  thrpt    3   9.675 ±  13.240  ops/us
+[info] MixedBenchmark.cache:writeCache  10000000  thrpt    3  11.154 ±   3.841  ops/us
+[info] MixedBenchmark.ref               10000000  thrpt    3  12.572 ±  15.541  ops/us
+[info] MixedBenchmark.ref:readRef       10000000  thrpt    3   8.615 ±  15.951  ops/us
+[info] MixedBenchmark.ref:writeRef      10000000  thrpt    3   3.957 ±   1.951  ops/us
+[info] ReadBenchmark.cache              10000000  thrpt    3  11.642 ±   3.855  ops/us
+[info] ReadBenchmark.ref                10000000  thrpt    3  28.598 ±  13.171  ops/us
+[info] WriteBenchmark.cache             10000000  thrpt    3   8.941 ±   3.721  ops/us
+[info] WriteBenchmark.ref               10000000  thrpt    3   9.256 ±  11.767  ops/us
 ```
 
 At smaller sizes (1000), `ConcurrentHashMap` is _much_ (~5x) faster. I haven't

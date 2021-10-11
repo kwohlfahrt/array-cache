@@ -56,11 +56,12 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
          */
         case None => return offsetHandle.setRelease(offsets, i % capacity, newOffset)
         /* We don't need to store every key, only most keys. If we do not find
-         * a free slot within nNeighbours, we give up. TODO - we could also
-         * replace the oldest.
+         * a free slot within nNeighbours, we overwrite. TODO - we could
+         * overwrite the oldest offset, or do hopscotch hashing.
          */
       }
     }
+    offsetHandle.setRelease(offsets, bucket % capacity, newOffset)
   }
 
   def hash(key: K): Int = (key.hashCode.intValue - 1).abs % capacity
