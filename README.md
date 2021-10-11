@@ -1,6 +1,8 @@
 # array-cache
 An array-based cache to store large numbers of embeddings without GC pressure.
 
+> **WARNING:** this library is a proof-of-concept, and has known breaking bugs.
+
 It is intended for the caching of large numbers of sparse embeddings, in the
 format `Seq[(Long, Double)]`, with a fixed maximum element count. Each stored
 embedding is identified by a `Long` ID. We use a single large array to avoid
