@@ -12,39 +12,44 @@ class RingBenchmark {
   import RingBenchmark._
 
   @Benchmark
-  @Threads(2)
-  @OutputTimeUnit(TimeUnit.MILLISECONDS)
-  def fill(ss: SharedState, cs: RingState, bh: Blackhole): Unit = {
+  @OutputTimeUnit(TimeUnit.MICROSECONDS)
+  def fill(ss: SharedState, cs: EmptyRing, bh: Blackhole): Unit = {
     cs.ring.push((ss.rand.nextLong, ss.rand.nextDouble))
   }
 
   @Benchmark
-  @Threads(2)
-  @OutputTimeUnit(TimeUnit.MILLISECONDS)
-  def read(ss: SharedState, cs: RingState, bh: Blackhole): Unit = {
-    bh.consume(cs.fullRing(cs.headIndex - ss.rand.nextLong % 2000))
+  @OutputTimeUnit(TimeUnit.MICROSECONDS)
+  def read(ss: SharedState, cs: FullRing, bh: Blackhole): Unit = {
+    bh.consume(cs.ring(cs.headIndex - ss.rand.nextLong % (2 * N)))
   }
 }
 
 object RingBenchmark {
+  var N: Int = 1000
+
   @State(Scope.Thread)
   class SharedState {
     val rand = new Random(4)
   }
 
-  @State(Scope.Thread)
-  class RingState {
-    val ring = new Ring[Long, Double](1000)
-    val fullRing = new Ring[Long, Double](1000)
+  @State(Scope.Benchmark)
+  class EmptyRing {
+    val ring = new Ring[Long, Double](N)
     var headIndex = 0L
 
     @Setup(Level.Iteration)
     def clear(): Unit = ring.clear()
+  }
+
+  @State(Scope.Benchmark)
+  class FullRing {
+    val ring = new Ring[Long, Double](N)
+    var headIndex = 0L
 
     @Setup(Level.Trial)
     def fill(ss: SharedState): Unit = {
-      for (_ <- 0 to 1000) {
-        headIndex = fullRing.push((ss.rand.nextLong % 2000, ss.rand.nextDouble))
+      for (_ <- 0 to N) {
+        headIndex = ring.push((ss.rand.nextLong % (2 * N), ss.rand.nextDouble))
       }
     }
   }
