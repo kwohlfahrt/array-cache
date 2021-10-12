@@ -61,7 +61,7 @@ object MixedBenchmark {
   class EmptyConcurrentHashMap {
     var cache: ConcurrentHashMap[Long, Double] = _
 
-    @Setup(Level.Trial)
+    @Setup(Level.Iteration)
     def clear(ss: SharedState): Unit = {
       cache = new ConcurrentHashMap(ss.N)
     }

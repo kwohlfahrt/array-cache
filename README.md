@@ -40,16 +40,16 @@ parallel threads.
 
 ```
 [info] Benchmark                             (N)   Mode  Cnt   Score    Error   Units
-[info] MixedBenchmark.cache             10000000  thrpt    3  14.047 ±  8.641  ops/us
-[info] MixedBenchmark.cache:readCache   10000000  thrpt    3   4.801 ±  4.351  ops/us
-[info] MixedBenchmark.cache:writeCache  10000000  thrpt    3   9.246 ± 12.738  ops/us
-[info] MixedBenchmark.ref               10000000  thrpt    3   0.817 ± 16.974  ops/us
-[info] MixedBenchmark.ref:readRef       10000000  thrpt    3   0.565 ± 11.414  ops/us
-[info] MixedBenchmark.ref:writeRef      10000000  thrpt    3   0.252 ±  5.568  ops/us
-[info] ReadBenchmark.cache              10000000  thrpt    3  12.543 ±  0.538  ops/us
-[info] ReadBenchmark.ref                10000000  thrpt    3  27.609 ± 19.838  ops/us
-[info] WriteBenchmark.cache             10000000  thrpt    3  13.708 ±  3.288  ops/us
-[info] WriteBenchmark.ref               10000000  thrpt    3   4.366 ± 16.540  ops/us
+[info] MixedBenchmark.cache             10000000  thrpt    3  14.277 ± 11.703  ops/us
+[info] MixedBenchmark.cache:readCache   10000000  thrpt    3   4.649 ±  4.668  ops/us
+[info] MixedBenchmark.cache:writeCache  10000000  thrpt    3   9.628 ± 16.214  ops/us
+[info] MixedBenchmark.ref               10000000  thrpt    3   9.139 ±  3.465  ops/us
+[info] MixedBenchmark.ref:readRef       10000000  thrpt    3   5.892 ±  2.861  ops/us
+[info] MixedBenchmark.ref:writeRef      10000000  thrpt    3   3.247 ±  0.606  ops/us
+[info] ReadBenchmark.cache              10000000  thrpt    3  12.696 ±  2.423  ops/us
+[info] ReadBenchmark.ref                10000000  thrpt    3  30.871 ±  7.450  ops/us
+[info] WriteBenchmark.cache             10000000  thrpt    3  13.744 ±  1.431  ops/us
+[info] WriteBenchmark.ref               10000000  thrpt    3   5.774 ± 13.307  ops/us
 ```
 
 At smaller sizes (1000), `ConcurrentHashMap` is _much_ (~5x) faster. I haven't
