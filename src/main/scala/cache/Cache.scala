@@ -33,8 +33,8 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
        * Consume semantics would be sufficient here.
        */
       val offset: Long = offsetHandle.getAcquire(offsets, i % capacity)
-      ring(offset) match {
-        case Some((rkey, value)) if (key == rkey) => return Some(value)
+      ring(offset, key) match {
+        case value@Some(_) => return value
         case _ => ()
       }
     }
@@ -46,21 +46,20 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     val bucket = hash(key)
     for (i <- bucket until (bucket + nNeighbours)) {
       val offset: Long = offsetHandle.getOpaque(offsets, i % capacity)
-      ring(offset) match {
-        /* We never overwrite non-expired keys, so don't have to consider
-         * re-using a slot if the key is the same.
-         */
-        case Some(_) => ()
+      /* We never overwrite non-expired keys, so don't have to consider
+       * re-using a slot if the key is the same.
+       */
+      if (ring.isDead(offset)) {
         /* This requires a store-store barrier, to ensure the pushed value is
          * visible if this offset is read.
          */
-        case None => return offsetHandle.setRelease(offsets, i % capacity, newOffset)
-        /* We don't need to store every key, only most keys. If we do not find
-         * a free slot within nNeighbours, we overwrite. TODO - we could
-         * overwrite the oldest offset, or do hopscotch hashing.
-         */
+        return offsetHandle.setRelease(offsets, i % capacity, newOffset)
       }
     }
+    /* We don't need to store every key, only most keys. If we do not find
+     * a free slot within nNeighbours, we overwrite. TODO - we could
+     * overwrite the oldest offset, or do hopscotch hashing.
+     */
     offsetHandle.setRelease(offsets, bucket % capacity, newOffset)
   }
 

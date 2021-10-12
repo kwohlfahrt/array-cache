@@ -21,11 +21,6 @@ class WriteBenchmark {
   def cache(ss: SharedState, cs: EmptyCache, bh: Blackhole): Unit = {
     cs.cache.update(ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
   }
-
-  @Benchmark
-  def ring(ss: SharedState, cs: EmptyRing, bh: Blackhole): Unit = {
-    cs.ring.push(cs.headIndex - ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
-  }
 }
 
 object WriteBenchmark {
@@ -44,18 +39,6 @@ object WriteBenchmark {
     @Setup(Level.Iteration)
     def clear(ss: SharedState): Unit = {
       cache = new Cache(ss.N)
-    }
-  }
-
-
-  @State(Scope.Benchmark)
-  class EmptyRing {
-    var ring: Ring[Long, Double] = _
-    var headIndex: Long = _
-
-    @Setup(Level.Trial)
-    def clear(ss: SharedState): Unit = {
-      ring = new Ring(ss.N)
     }
   }
 

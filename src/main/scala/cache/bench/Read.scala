@@ -21,11 +21,6 @@ class ReadBenchmark {
   def cache(ss: SharedState, cs: FullCache, bh: Blackhole): Unit = {
     bh.consume(cs.cache(ss.rand.nextLong % (2 * ss.N)))
   }
-
-  @Benchmark
-  def ring(ss: SharedState, cs: FullRing, bh: Blackhole): Unit = {
-    bh.consume(cs.ring(cs.headIndex - ss.rand.nextLong % (2 * ss.N)))
-  }
 }
 
 object ReadBenchmark {
@@ -50,20 +45,6 @@ object ReadBenchmark {
     }
   }
 
-
-  @State(Scope.Benchmark)
-  class FullRing {
-    var ring: Ring[Long, Double] = _
-    var headIndex: Long = _
-
-    @Setup(Level.Trial)
-    def fill(ss: SharedState): Unit = {
-      ring = new Ring(ss.N)
-      for (_ <- 0 to ss.N) {
-        headIndex = ring.push(ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
-      }
-    }
-  }
 
   @State(Scope.Benchmark)
   class FullConcurrentHashMap {

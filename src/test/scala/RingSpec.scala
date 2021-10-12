@@ -18,7 +18,9 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val ring = new Ring[Long, Double](capacity)
     val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
     val indices = items.map(ring.push(_))
-    indices.flatMap(ring(_)) shouldEqual items
+    forAll(indices.zip(items)) {
+      case (idx, (k, v)) => ring(idx, k) shouldEqual Some(v)
+    }
   }
 
   it should "overwrite values when full" in {
@@ -27,11 +29,11 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val ring = new Ring[Long, Double](capacity)
     val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
     val indices = items.map(ring.push(_))
-    ring(indices(0)) should contain (items(0))
+    ring(indices(0), items(0)._1) should contain (items(0)._2)
     val item = (rand.nextLong, rand.nextDouble)
     val index = ring.push(item)
-    ring(index) should contain (item)
-    ring(indices(0)) shouldBe empty
+    ring(index, item._1) should contain (item._2)
+    ring(indices(0), items(0)._1) shouldBe empty
   }
 
   it should "store and retrieve values reliably from multiple threads" in {
@@ -42,7 +44,7 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
     val indices = items.map(i => Future { ring.push(i) } (ec))
     forAll(indices.zip(items)) {
-      case (idx, item) => idx map { ring(_) should contain (item) }
+      case (f, (k, v)) => whenReady(f) { idx => ring(idx, k) should contain (v) }
     }
   }
 
@@ -54,7 +56,7 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val items = (0 until (2 * capacity)).map(_ => rand.nextLong -> rand.nextDouble)
     val indices = items.map(i => Future { ring.push(i) } (ec))
     forAll(indices.zip(items)) {
-      case (idx, item) => whenReady(idx) { ring(_) should (be (empty) or contain (item)) }
+      case (f, (k, v)) => whenReady(f) { idx => ring(idx, k) should (be (empty) or contain (v)) }
     }
   }
 }

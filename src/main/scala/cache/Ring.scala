@@ -23,17 +23,21 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   private val keys = Array.fill(capacity)(kev.zero)
   private val values = Array.fill(capacity)(vev.zero)
 
-  def apply(i: Long): Option[(K, V)] = {
+  def apply(i: Long, k: K): Option[V] = {
     // Optimization to avoid work when checking if slots are free
-    if (isDead(headHandle.getOpaque(this), i)) { return None }
+    if (isDead(i)) { return None }
     val index = (i & capacityMask).intValue
-    val item = keys(index) -> values(index)
+    if (keys(index) == k) {
+      val value = values(index)
 
-    /* We only need to check if the value has been overwritten during reading.
-     * We will never try to read the value before setting it.
-     */
-    VarHandle.loadLoadFence()
-    if (isDead(headHandle.getOpaque(this), i)) None else Some(item)
+      /* We only need to check if the value has been overwritten during reading.
+       * We will never try to read the value before setting it.
+       */
+      VarHandle.loadLoadFence()
+      if (isDead(i)) None else Some(value)
+    } else {
+      None
+    }
   }
 
   def push(item: (K, V)): Long = {
@@ -50,7 +54,8 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     offset
   }
 
-  def isDead(head: Long, i: Long): Boolean = {
+  def isDead(i: Long): Boolean = {
+    val head: Long = headHandle.getOpaque(this)
     (i < head - capacity) || (i > head)
     // FIXME: Handle the 2^64 wraparound
   }
