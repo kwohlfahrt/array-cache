@@ -40,7 +40,7 @@ object ReadBenchmark {
     def fill(ss: SharedState): Unit = {
       cache = new Cache(ss.N)
       for (_ <- 0 to ss.N) {
-        cache.update(ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
+        cache.update(ss.rand.nextLong % (2 * ss.N), Array(ss.rand.nextDouble))
       }
     }
   }
@@ -48,13 +48,13 @@ object ReadBenchmark {
 
   @State(Scope.Benchmark)
   class FullConcurrentHashMap {
-    var cache: ConcurrentHashMap[Long, Double] = _
+    var cache: ConcurrentHashMap[Long, Array[Double]] = _
 
     @Setup(Level.Trial)
     def fill(ss: SharedState): Unit = {
       cache = new ConcurrentHashMap(ss.N)
       for (_ <- 0 to ss.N) {
-        cache.put(ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
+        cache.put(ss.rand.nextLong % (2 * ss.N), Array(ss.rand.nextDouble))
       }
     }
   }

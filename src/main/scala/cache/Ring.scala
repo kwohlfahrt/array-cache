@@ -11,6 +11,7 @@ import java.lang.invoke.{MethodHandles, VarHandle}
  */
 class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   minCapacity: Int = 1,
+  itemSize: Int = 1,
 )(implicit kev: Numeric[K], vev: Numeric[V]) {
   import Ring._
 
@@ -21,14 +22,15 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
 
   private var head: Long = capacity.longValue + 1 // Start so that 0 (offset fill-value offset) is invalid
   private val keys = Array.fill(capacity)(kev.zero)
-  private val values = Array.fill(capacity)(vev.zero)
+  private val values = Array.fill(itemSize * capacity)(vev.zero)
 
-  def apply(i: Long, k: K): Option[V] = {
+  def apply(i: Long, k: K): Option[Array[V]] = {
     // Optimization to avoid work when checking if slots are free
     if (isDead(i)) { return None }
     val index = (i & capacityMask).intValue
     if (keys(index) == k) {
-      val value = values(index)
+      val start = index * itemSize
+      val value = values.slice(start, start + itemSize)
 
       /* We only need to check if the value has been overwritten during reading.
        * We will never try to read the value before setting it.
@@ -40,7 +42,7 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     }
   }
 
-  def push(item: (K, V)): Long = {
+  def push(key: K, value: Array[V]): Long = {
     /* Here, we reserve a slot.
      *
      * This requires a store-store fence. getAndAdd has volatile semantics, so
@@ -48,9 +50,8 @@ class Ring[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
      */
     val offset: Long = headHandle.getAndAdd(this, 1)
     val index = (offset & capacityMask).intValue
-    val (key, value) = item
     keys(index) = key
-    values(index) = value
+    value.copyToArray(values, index * itemSize)
     offset
   }
 

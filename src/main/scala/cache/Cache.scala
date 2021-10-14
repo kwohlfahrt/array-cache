@@ -12,11 +12,12 @@ import java.lang.invoke.MethodHandles
  */
 class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   capacity: Int = 1,
+  itemSize: Int = 1,
   nNeighbours: Int = 4,
 )(implicit kev: Numeric[K], vev: Numeric[V]){
   import Cache._
 
-  private val ring = new Ring[K, V](capacity)
+  private val ring = new Ring[K, V](capacity, itemSize=itemSize)
   /* The offset can be at most a Long, to allow atomic instructions. The top
    * bit of the offset contains an occupancy bit.
    */
@@ -24,7 +25,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
   private val occupiedMask = ~(~0L >>> 1)
   private val indexMask = ~occupiedMask
 
-  def apply(key: K): Option[V] = {
+  def apply(key: K): Option[Array[V]] = {
     val bucket = hash(key)
     for (i <- bucket until (bucket + nNeighbours)) {
       /* This requires a load-load barrier, to ensure the read of the data
@@ -41,7 +42,7 @@ class Cache[K <: AnyVal : ClassTag, V <: AnyVal : ClassTag](
     None
   }
 
-  def update(key: K, value: V): Unit = {
+  def update(key: K, value: Array[V]): Unit = {
     val newOffset = ring.push(key, value)
     val bucket = hash(key)
     for (i <- bucket until (bucket + nNeighbours)) {

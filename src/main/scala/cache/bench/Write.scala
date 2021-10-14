@@ -14,12 +14,12 @@ class WriteBenchmark {
 
   @Benchmark
   def ref(ss: SharedState, cs: EmptyConcurrentHashMap): Unit = {
-    cs.cache.put(ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
+    cs.cache.put(ss.rand.nextLong % (2 * ss.N), Array(ss.rand.nextDouble))
   }
 
   @Benchmark
   def cache(ss: SharedState, cs: EmptyCache, bh: Blackhole): Unit = {
-    cs.cache.update(ss.rand.nextLong % (2 * ss.N), ss.rand.nextDouble)
+    cs.cache.update(ss.rand.nextLong % (2 * ss.N), Array(ss.rand.nextDouble))
   }
 }
 
@@ -44,7 +44,7 @@ object WriteBenchmark {
 
   @State(Scope.Benchmark)
   class EmptyConcurrentHashMap {
-    var cache: ConcurrentHashMap[Long, Double] = _
+    var cache: ConcurrentHashMap[Long, Array[Double]] = _
 
     @Setup(Level.Iteration)
     def clear(ss: SharedState): Unit = {

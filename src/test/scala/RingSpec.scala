@@ -16,23 +16,34 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val capacity = 8
     val rand = new Random(4)
     val ring = new Ring[Long, Double](capacity)
-    val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
-    val indices = items.map(ring.push(_))
+    val items = (0 until capacity).map(_ => rand.nextLong -> Array(rand.nextDouble))
+    val indices = items.map { case (k, v) => ring.push(k, v)}
     forAll(indices.zip(items)) {
-      case (idx, (k, v)) => ring(idx, k) shouldEqual Some(v)
+      case (idx, (k, v)) => ring(idx, k) should contain (v)
     }
+  }
+
+  "A Ring" should "return copies of input data" in {
+    val capacity = 8
+    val rand = new Random(4)
+    val ring = new Ring[Long, Double](capacity)
+    val (k, v) = rand.nextLong -> Array(1.0)
+    val index = ring.push(k, v)
+    val Some(v2) = ring(index, k)
+    v2(0) = 5.0
+    ring(index, k) should contain (Array(1.0))
   }
 
   it should "overwrite values when full" in {
     val capacity = 8
     val rand = new Random(4)
     val ring = new Ring[Long, Double](capacity)
-    val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
-    val indices = items.map(ring.push(_))
+    val items = (0 until capacity).map(_ => rand.nextLong -> Array(rand.nextDouble))
+    val indices = items.map { case (k, v) => ring.push(k, v)}
     ring(indices(0), items(0)._1) should contain (items(0)._2)
-    val item = (rand.nextLong, rand.nextDouble)
-    val index = ring.push(item)
-    ring(index, item._1) should contain (item._2)
+    val (k, v) = (rand.nextLong, Array(rand.nextDouble))
+    val index = ring.push(k, v)
+    ring(index, k) should contain (v)
     ring(indices(0), items(0)._1) shouldBe empty
   }
 
@@ -41,8 +52,8 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val capacity = 100
     val ring = new Ring[Long, Double](capacity)
     val rand = new Random(4)
-    val items = (0 until capacity).map(_ => rand.nextLong -> rand.nextDouble)
-    val indices = items.map(i => Future { ring.push(i) } (ec))
+    val items = (0 until capacity).map(_ => rand.nextLong -> Array(rand.nextDouble))
+    val indices = items.map { case (k, v) => Future { ring.push(k, v) } (ec) }
     forAll(indices.zip(items)) {
       case (f, (k, v)) => whenReady(f) { idx => ring(idx, k) should contain (v) }
     }
@@ -53,8 +64,8 @@ class RingSpec extends AsyncFlatSpec with Matchers with Inspectors {
     val capacity = 100
     val ring = new Ring[Long, Double](capacity)
     val rand = new Random(4)
-    val items = (0 until (2 * capacity)).map(_ => rand.nextLong -> rand.nextDouble)
-    val indices = items.map(i => Future { ring.push(i) } (ec))
+    val items = (0 until (2 * capacity)).map(_ => rand.nextLong -> Array(rand.nextDouble))
+    val indices = items.map { case (k, v) => Future { ring.push(k, v) } (ec) }
     forAll(indices.zip(items)) {
       case (f, (k, v)) => whenReady(f) { idx => ring(idx, k) should (be (empty) or contain (v)) }
     }

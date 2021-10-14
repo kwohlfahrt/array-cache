@@ -9,8 +9,8 @@ embedding is identified by a `Long` ID. We use a single large array to avoid
 keeping track of excessive numbers of long-lived objects, that don't play well
 with generational GCs.
 
-Currently, only a single `(Long, Double)` pair is stored, but the principle
-should be straightforward to extend (though performance might be worse).
+Currently, only an  `Array[Double]` is stored for each key, but the principle
+should be straightforward to extend.
 
 ## Design
 
